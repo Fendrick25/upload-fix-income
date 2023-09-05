@@ -23,72 +23,18 @@ import java.util.stream.Collectors;
 public class IncomeService {
     String excelFilePath = "Upload_Fixed_Income_20230906.xls";
     String imageOutputPath = "excel/output.jpeg";
-    BufferedImage IDX;
-    BufferedImage KPEI;
-    BufferedImage KSEI;
+    BufferedImage idxImage;
+    BufferedImage kpeiImage;
+    BufferedImage kseiImage;
+    BufferedImage ciptadanaImage;
+    Color brown = new Color(154,102,51);
+    Color red = new Color(154,1,0);
 
     public void init() throws IOException{
-        IDX = ImageIO.read(new File("asset/IDX.png"));
-        KPEI = ImageIO.read(new File("asset/KPEI.jpg"));
-        KSEI = ImageIO.read(new File("asset/KSEI.png"));
-    }
-
-   // @PostConstruct
-    public void convertExcelToImage2() throws IOException {
-        try (FileInputStream fis = new FileInputStream(new File(excelFilePath))) {
-
-            Workbook workbook;
-            if (excelFilePath.endsWith(".xls")) {
-                workbook = new HSSFWorkbook(fis);
-            } else if (excelFilePath.endsWith(".xlsx")) {
-                workbook = new XSSFWorkbook(fis);
-            } else {
-                throw new IllegalArgumentException("Invalid file type");
-            }
-
-            Sheet sheet = workbook.getSheetAt(0);
-
-            int totalWidth = 0;
-            short maxColumns = sheet.getRow(0).getLastCellNum();
-            for (int i = 0; i < maxColumns; i++) {
-                totalWidth += sheet.getColumnWidthInPixels(i);
-            }
-
-            int totalHeight = 0;
-            for (int i = 0; i < sheet.getPhysicalNumberOfRows(); i++) {
-                totalHeight += sheet.getRow(i).getHeight();
-            }
-
-            BufferedImage image = new BufferedImage(totalWidth, totalHeight, BufferedImage.TYPE_INT_RGB);
-            Graphics2D graphics = image.createGraphics();
-            graphics.setColor(Color.WHITE);
-            graphics.fillRect(0, 0, totalWidth, totalHeight);
-
-            graphics.setFont(new Font("Arial", Font.PLAIN, 10)); // Adjust font size and style as needed
-
-            int yPosition = 0;
-            for (int i = 0; i < sheet.getPhysicalNumberOfRows(); i++) {
-                Row row = sheet.getRow(i);
-                int xPosition = 0;
-                for (int j = 0; j < row.getLastCellNum(); j++) {
-                    Cell cell = row.getCell(j);
-                    if (cell != null) {
-                        int cellWidth = (int) sheet.getColumnWidthInPixels(j);
-                        int cellHeight = row.getHeight();
-                        String cellValue = new DataFormatter().formatCellValue(cell);
-                        System.out.println(cellValue);
-                        graphics.setColor(Color.BLACK);
-                        graphics.drawRect(xPosition, yPosition, cellWidth, cellHeight);
-                        graphics.drawString(cellValue, xPosition + 5, yPosition + cellHeight - 5); // Add some padding
-                    }
-                    xPosition += sheet.getColumnWidthInPixels(j);
-                }
-                yPosition += sheet.getRow(i).getHeight();
-            }
-
-            graphics.dispose();
-            ImageIO.write(image, "jpeg", new File(imageOutputPath));
-        }
+        idxImage = ImageIO.read(new File("asset/IDX.png"));
+        kpeiImage = ImageIO.read(new File("asset/KPEI.jpg"));
+        kseiImage = ImageIO.read(new File("asset/KSEI.png"));
+        ciptadanaImage = ImageIO.read(new File("asset/ciptadana.png"));
     }
 
     @PostConstruct
@@ -110,8 +56,12 @@ public class IncomeService {
             int totalWidth = 0;
             short maxColumns = sheet.getRow(0).getLastCellNum();
             for (int i = 0; i < maxColumns; i++) {
-                totalWidth += sheet.getColumnWidthInPixels(i);
+                if(!(i == 1 | i == 2 | i == 4)){
+                    totalWidth += sheet.getColumnWidthInPixels(i);
+                }
+
             }
+            totalWidth += 10;
 
             int totalHeight = 0;
             for (int i = 0; i < sheet.getPhysicalNumberOfRows(); i++) {
@@ -122,7 +72,6 @@ public class IncomeService {
             Graphics2D graphics = image.createGraphics();
             graphics.setColor(Color.WHITE);
             graphics.fillRect(0, 0, totalWidth, totalHeight);
-
             graphics.setFont(new Font("Arial", Font.PLAIN, 10)); // Adjust font size and style as needed
 
             int yPosition = 0;
@@ -146,31 +95,11 @@ public class IncomeService {
                         .build();
 
                 fixIncomes.add(fixIncome);
-
-/*                for (int j = 0; j < row.getLastCellNum(); j++) {
-                    Cell cell = row.getCell(j);
-                    if (cell != null) {
-                        int cellWidth = (int) sheet.getColumnWidthInPixels(j);
-                        int cellHeight = row.getHeight();
-                        String cellValue = new DataFormatter().formatCellValue(cell);
-
-
-                        if(!cellValue.equalsIgnoreCase("")){
-                            //System.out.println(cellValue);
-                            graphics.setColor(Color.BLACK);
-                            graphics.drawRect(xPosition, yPosition, cellWidth, cellHeight);
-                            graphics.drawString(cellValue, xPosition + 5, yPosition + cellHeight - 5); // Add
-                        }
-                    }
-                    xPosition += sheet.getColumnWidthInPixels(j);
-                }
-                yPosition += 30;*/
             }
 
             int cellHeight = 30;
             int textPadding = 5;
-            int headerHeight = 30; // or any value suitable for your needs
-            int headerPadding = 5; // p
+
 
             HashMap<String, HashMap<String, List<FixIncome>>> fixIncomeByCurrencyAndType =
                     fixIncomes.stream()
@@ -181,15 +110,16 @@ public class IncomeService {
                             ));
 
             int cellColumn = 0;
+            graphics.drawImage(ciptadanaImage, 5, 20, null);
+            yPosition = ciptadanaImage.getHeight() + 20;
+
             for (String currency : fixIncomeByCurrencyAndType.keySet()) {
 
                 Row headerRow = sheet.getRow(2);
                 //String[] headers = new String[headerRow.getLastCellNum()];
                 List<String> headers = new ArrayList<>();
                 for (int i = 0; i < headerRow.getLastCellNum(); i++) {
-                  if(!(i == 1 || i == 2 | i == 4)){
-                      headers.add(new DataFormatter().formatCellValue(headerRow.getCell(i)));
-                  }
+                    headers.add(new DataFormatter().formatCellValue(headerRow.getCell(i)));
                 }
 
 
@@ -198,13 +128,14 @@ public class IncomeService {
                 HashMap<String, List<FixIncome>> fixIncomeMap = fixIncomeByCurrencyAndType.get(currency);
                 for(String type : fixIncomeMap.keySet()){
                     List<FixIncome> incomes = fixIncomeMap.get(type);
-                    int xPositionHeader = 0;
+                    int xPositionHeader = 5;
 
                     for (int j = 0; j < headers.size(); j++) {
                         cellColumn += (int) sheet.getColumnWidthInPixels(j);
                     }
                     yPosition += cellHeight;
                     for (int j = 0; j < headers.size(); j++) {
+
                         int cellWidth = (int) sheet.getColumnWidthInPixels(j);
                         if(j == 0){
                             graphics.setColor(Color.BLACK);
@@ -212,28 +143,42 @@ public class IncomeService {
 
                             graphics.setColor(Color.BLACK);
                             System.out.println( type);
-                            graphics.drawString(generateTitle(type).concat(" " + currency.toUpperCase()), xPositionHeader + textPadding, yPosition + cellHeight - textPadding);
+                            graphics.setFont(new Font("Arial", Font.BOLD, 11).deriveFont(Font.BOLD | Font.ITALIC));
+                            graphics.setColor(brown);
+                            String title = generateTitle(type);
+                            graphics.drawString(title, xPositionHeader + textPadding, yPosition + cellHeight - textPadding);
+
+
+                            int titleWidth = graphics.getFontMetrics().stringWidth(title);
+
+                            graphics.setColor(red);
+                            graphics.drawString(" " + currency.toUpperCase(), xPositionHeader + textPadding + titleWidth, yPosition + cellHeight - textPadding);
                             yPosition += cellHeight;
                         }
 
-                        graphics.setColor(Color.BLACK);
-                        graphics.drawRect(xPositionHeader, yPosition, cellWidth, cellHeight);
+                        if(!(j == 1 || j == 2 || j == 4)){
+                            graphics.setFont(new Font("Arial", Font.PLAIN, 10));
+                            graphics.setColor(Color.BLACK);
+                            graphics.drawRect(xPositionHeader, yPosition, cellWidth, cellHeight);
 
-                        graphics.setColor(Color.BLACK);
-                        graphics.drawString(headers.get(j), xPositionHeader + textPadding, yPosition + cellHeight - textPadding);
+                            graphics.setColor(red);
+                            graphics.setFont(new Font("Arial", Font.BOLD, 10));
+                            graphics.drawString(headers.get(j), xPositionHeader + textPadding, yPosition + cellHeight - textPadding);
 
-                        xPositionHeader += cellWidth;
+                            xPositionHeader += cellWidth;
+                        }
                     }
                     yPosition += cellHeight;
 
 
 
                     for (FixIncome income : incomes) {
-                        int xPosition = 0;
+                        int xPosition = 5;
                         for (int j = 0; j < 12; j++) { // 12 fields in FixIncome
 
                             if(!(j == 1 || j == 2 | j == 4)){
                                 int cellWidth = (int) sheet.getColumnWidthInPixels(j);
+                                graphics.setFont(new Font("Arial", Font.PLAIN, 10));
                                 graphics.setColor(Color.BLACK);
                                 graphics.drawRect(xPosition, yPosition, cellWidth, cellHeight);
 
@@ -246,28 +191,26 @@ public class IncomeService {
                             }
                         }
                         yPosition += cellHeight;
-                        graphics.drawString(" ", xPosition + textPadding, yPosition + cellHeight - textPadding);
                     }
                    // yPosition += cellHeight;
                 }
             }
 
-/*            // Draw image at the top-right corner
-            graphics.drawImage(IDX, canvasWidth, 0, null);
-
-            // Draw image at the bottom-left corner
-            graphics.drawImage(IDX, 0, canvasHeight, null);
-
-            // Draw image at the bottom-right corner*/
 
 
 
             cellColumn = cellColumn / 3;
-            graphics.drawImage(IDX,  300, cellColumn - 100, null);
-            graphics.drawImage(KPEI, 500, cellColumn - 100, null);
-            graphics.drawImage(KSEI, 700, cellColumn - 100, null);
 
+            graphics.setFont(new Font("Arial", Font.BOLD, 10).deriveFont(Font.BOLD | Font.ITALIC));
+            graphics.setColor(Color.BLACK);
+            graphics.drawString("** Prices are indicative, subject to availability and may change at any time.", textPadding, cellColumn + 5);
+            graphics.drawImage(idxImage,  cellColumn - 550, cellColumn + 20, null);
+            graphics.drawImage(kpeiImage, cellColumn - 400, cellColumn + 60, null);
+            graphics.drawImage(kseiImage, cellColumn - 420, cellColumn + 20, null);
 
+            graphics.setFont(new Font("Arial", Font.PLAIN, 10));
+            graphics.setColor(red);
+            graphics.drawString("PT Ciptadana Sekuritas Asia telah terdaftar dan diawasi oleh OJK", textPadding, cellColumn + 50);
             graphics.dispose();
             ImageIO.write(image, "jpeg", new File(imageOutputPath));
 
